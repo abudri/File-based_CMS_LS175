@@ -9,9 +9,9 @@ configure do
   set :sessions_secret, 'super secret' # setting the session secret, to the string 'secret'
 end
 
-configure do
-  set :erb, escape_html: true # Lesson 6, Sanitizing HTML: https://launchschool.com/lessons/31df6daa/assignments/d98e4174
-end
+# configure do
+#   set :erb, escape_html: true # Lesson 6, Sanitizing HTML: https://launchschool.com/lessons/31df6daa/assignments/d98e4174
+# end
 
 def data_path
   if ENV["RACK_ENV"] == "test"  # Assignment: https://launchschool.com/lessons/ac566aae/assignments/a23f0109
@@ -35,7 +35,7 @@ def load_file_content(path)
     headers["Content-Type"] = "text/plain"
     content
   when ".md"
-    render_markdown(content)
+    erb render_markdown(content) # `erb` added here: https://launchschool.com/lessons/ac566aae/assignments/84acfc0c
   end
 end
 
