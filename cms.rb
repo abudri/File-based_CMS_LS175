@@ -131,6 +131,6 @@ end
 
 post '/users/signout' do
   session.delete(:username)
-  session[:message] = 'You have been signed out.'
+  session[:message] = 'You have been signed out'
   redirect '/'
 end

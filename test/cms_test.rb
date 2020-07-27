@@ -9,14 +9,6 @@ require 'fileutils' # https://launchschool.com/lessons/ac566aae/assignments/a23f
 
 require_relative '../cms' # references cms.rb main program file
 
-def setup
-  FileUtils.mkdir_p(data_path) # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
-end
-
-def teardown
-  FileUtils.rm_rf(data_path) # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
-end
-
 class CMSTest < Minitest::Test
   include Rack::Test::Methods # gain access to a bunch of useful testing helper methods
 
@@ -24,10 +16,22 @@ class CMSTest < Minitest::Test
     Sinatra::Application # above Rack::Test::Methods methods expect a method called app to exist and return an instance of a Rack application when called
   end
 
+  def setup
+    FileUtils.mkdir_p(data_path) # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+  end
+
+  def teardown
+    FileUtils.rm_rf(data_path) # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+  end
+
   def create_document(name, content = '')
     File.open(File.join(data_path, name), 'w') do |file| # Assignment https://launchschool.com/lessons/ac566aae/assignments/a23f0109 /  a simple way to create documents during testing. Creates empty files by default, but an optional second parameter allows the contents of the file to be passed in
       file.write(content)
     end
+  end
+
+  def session
+    last_request.env['rack.session'] # Assignment https://launchschool.com/lessons/ac566aae/assignments/52d6d56d
   end
 
   def test_index
@@ -56,14 +60,7 @@ class CMSTest < Minitest::Test
     get '/notafile.ext' # Attempt to access a nonexistent file
 
     assert_equal 302, last_response.status # Assert that the user was redirected
-
-    get last_response['Location'] # Request the page that the user was redirected to
-
-    assert_equal 200, last_response.status
-    assert_includes last_response.body, 'notafile.ext does not exist'
-
-    get '/' # Reload the page
-    refute_includes last_response.body, 'notafile.ext does not exist' # Assert that our message has been removed
+    assert_equal 'notafile.ext does not exist.', session[:message] # refactored using sessions, assignment https://launchschool.com/lessons/ac566aae/assignments/52d6d56d
   end
 
   def test_viewing_markdown_document
@@ -89,10 +86,7 @@ class CMSTest < Minitest::Test
     post '/changes.txt', content: 'new content'
 
     assert_equal 302, last_response.status
-
-    get last_response['Location']
-
-    assert_includes last_response.body, 'changes.txt has been updated'
+    assert_equal 'changes.txt has been updated.', session[:message] # refactored using sessions, assignment https://launchschool.com/lessons/ac566aae/assignments/52d6d56d
 
     get '/changes.txt'
     assert_equal 200, last_response.status
@@ -110,9 +104,7 @@ class CMSTest < Minitest::Test
   def test_create_new_document
     post '/create', filename: 'test.txt' # assignment: https://launchschool.com/lessons/ac566aae/assignments/e1e7cf2a
     assert_equal 302, last_response.status
-
-    get last_response['Location']
-    assert_includes last_response.body, 'test.txt has been created'
+    assert_equal 'test.txt has been created.', session[:message]
 
     get '/'
     assert_includes last_response.body, 'test.txt'
@@ -128,14 +120,11 @@ class CMSTest < Minitest::Test
     create_document('test.txt')
 
     post '/test.txt/delete'
-
     assert_equal 302, last_response.status
-
-    get last_response['Location']
-    assert_includes last_response.body, 'test.txt has been deleted'
+    assert_equal 'test.txt has been deleted', session[:message]
 
     get '/'
-    refute_includes last_response.body, 'test.txt'
+    refute_includes last_response.body, 'href="/test.txt"'
   end
 
   def test_signin_form
@@ -149,27 +138,29 @@ class CMSTest < Minitest::Test
   def test_signin
     post '/users/signin', username: 'admin', password: 'secret'
     assert_equal 302, last_response.status
+    assert_equal 'Welcome!', session[:message]
+    assert_equal 'admin', session[:username]
 
     get last_response['Location']
-    assert_includes last_response.body, 'Welcome'
     assert_includes last_response.body, 'Signed in as admin'
   end
 
   def test_signin_with_bad_credentials
     post '/users/signin', username: 'guest', password: 'shhhh'
     assert_equal 422, last_response.status
+    assert_nil session[:username]
     assert_includes last_response.body, 'Invalid credentials'
   end
 
   def test_signout
-    post '/users/signin', username: 'admin', password: 'secret'
-    get last_response['Location']
-    assert_includes last_response.body, 'Welcome'
+    get '/', {}, 'rack.session' => { username: 'admin' }
+    assert_includes last_response.body, 'Signed in as admin'
 
     post '/users/signout'
-    get last_response['Location']
+    assert_equal 'You have been signed out', session[:message] # refactored using sessions, https://launchschool.com/lessons/ac566aae/assignments/52d6d56d
 
-    assert_includes last_response.body, 'You have been signed out'
+    get last_response['Location']
+    assert_nil session[:username]
     assert_includes last_response.body, 'Sign In'
   end
 end
