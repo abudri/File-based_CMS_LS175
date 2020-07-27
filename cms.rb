@@ -23,6 +23,7 @@ end
 
 root = File.expand_path(__dir__)
 
+# rendering markdown into HTML using the redcarpet gem
 def render_markdown(text)
   markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)  # from Assignment for rendering markdown files as HTML: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
   markdown.render(text)
@@ -39,12 +40,46 @@ def load_file_content(path)
   end
 end
 
+# view an index or listing of the files in the CMS
 get '/' do
   pattern = File.join(data_path, "*") # assignment https://launchschool.com/lessons/ac566aae/assignments/a23f0109
   @files = Dir.glob(pattern).map { |path| File.basename(path) }
   erb :index
 end
 
+# get view template form for creating a new file, we only enter the new file name here and taken back to the home index view. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
+get '/new' do
+  erb :new
+end
+
+# creating a new file by saving/posting it's name. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
+post '/create' do
+  filename = params[:filename].to_s # entered by user in url params
+  if filename.size == 0 
+    session[:message] = "A name is required."
+    status 422
+    erb :new
+  else
+    file_path = File.join(data_path, filename)
+
+    File.write(file_path, "")
+    session[:message] = "#{params[:filename]} has been created."
+
+    redirect "/"
+  end
+end
+
+# update/save edits to an existing file from the edit file form view template. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
+post '/:filename' do
+  file_path = File.join(data_path, params[:filename])
+
+  File.write(file_path, params[:content])
+  session[:message] = "#{params[:filename]} has been updated."
+  redirect "/"
+end
+
+
+# view a file
 get '/:filename' do
   file_path = File.join(data_path, params[:filename])
 
@@ -56,6 +91,7 @@ get '/:filename' do
   end
 end
 
+# get the view template for editing an existing file
 get '/:filename/edit' do
   file_path = File.join(data_path, params[:filename])
 
@@ -63,12 +99,4 @@ get '/:filename/edit' do
   @content = File.read(file_path)
 
   erb :edit
-end
-
-post '/:filename' do
-  file_path = File.join(data_path, params[:filename])
-
-  File.write(file_path, params[:content])
-  session[:message] = "#{params[:filename]} has been updated."
-  redirect "/"
 end
