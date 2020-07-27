@@ -1,12 +1,20 @@
-# frozen_string_literal: true
-
 # test/cms_test.rb | Testing our Sinatra Application: https://launchschool.com/lessons/ac566aae/assignments/242be636
 ENV['RACK_ENV'] = 'test'
 
 require 'minitest/autorun'
 require 'rack/test'
+require "fileutils" # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
 
 require_relative '../cms' # references cms.rb main program file
+
+
+def setup
+  FileUtils.mkdir_p(data_path) # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+end
+
+def teardown
+  FileUtils.rm_rf(data_path) # https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+end
 
 class CMSTest < Minitest::Test
   include Rack::Test::Methods # gain access to a bunch of useful testing helper methods
@@ -15,20 +23,30 @@ class CMSTest < Minitest::Test
     Sinatra::Application # above Rack::Test::Methods methods expect a method called app to exist and return an instance of a Rack application when called
   end
 
-  def test_index
-    get "/"
+  def create_document(name, content = "")
+    File.open(File.join(data_path, name), "w") do |file| # Assignment https://launchschool.com/lessons/ac566aae/assignments/a23f0109 /  a simple way to create documents during testing. Creates empty files by default, but an optional second parameter allows the contents of the file to be passed in
+      file.write(content)
+    end
+  end
 
-    assert_equal 200, last_response.status
+  def test_index
+    create_document "about.md" # setup necessary data
+    create_document "changes.txt" # setup necessary data
+    
+    get "/" # Execute the code being tested
+
+    assert_equal 200, last_response.status # Assert results of execution, this line and down
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "about.md"
     assert_includes last_response.body, "changes.txt"
-    assert_includes last_response.body, "history.txt"
   end
 
   def test_viewing_text_document
-    get '/history.txt'
+    create_document "history.txt", '1993 - Yukihiro Matsumoto dreams up Ruby.' # not showing parenthesis here, setting up necessary data
+    
+    get '/history.txt' # Execute the code being tested
 
-    assert_equal 200, last_response.status
+    assert_equal 200, last_response.status # Assert results of execution, this line and down
     assert_equal 'text/plain', last_response['Content-Type']
     assert_includes last_response.body, '1993 - Yukihiro Matsumoto dreams up Ruby.'
   end
@@ -48,6 +66,7 @@ class CMSTest < Minitest::Test
   end
 
   def test_viewing_markdown_document
+    create_document "about.md", "# Ruby is..." # second argument is markdown format, which should be converted to HTML by redcarpet gem
     get "/about.md"
 
     assert_equal 200, last_response.status
@@ -56,7 +75,9 @@ class CMSTest < Minitest::Test
   end
 
   def test_editing_document
-    get "/changes.txt/edit" # getting the form for editing a document
+    create_document "changes.txt" # setup test data
+
+    get "/changes.txt/edit" # getting the form for editing a document / execute code being tested
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, "<textarea"

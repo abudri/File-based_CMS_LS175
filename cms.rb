@@ -13,6 +13,14 @@ configure do
   set :erb, escape_html: true # Lesson 6, Sanitizing HTML: https://launchschool.com/lessons/31df6daa/assignments/d98e4174
 end
 
+def data_path
+  if ENV["RACK_ENV"] == "test"  # Assignment: https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+    File.expand_path("../test/data", __FILE__)
+  else
+    File.expand_path("../data", __FILE__)
+  end
+end
+
 root = File.expand_path(__dir__)
 
 def render_markdown(text)
@@ -32,12 +40,13 @@ def load_file_content(path)
 end
 
 get '/' do
-  @files = Dir.glob(root + '/data/*').map { |path| File.basename(path) }
+  pattern = File.join(data_path, "*") # assignment https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+  @files = Dir.glob(pattern).map { |path| File.basename(path) }
   erb :index
 end
 
 get '/:filename' do
-  file_path = root + '/data/' + params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
   if File.exist?(file_path)
     load_file_content(file_path) # this simply displays contexts of file, such as /data/history.txt.  We refefence the file in the applicaiton from root or home though, /history.txt
@@ -48,7 +57,7 @@ get '/:filename' do
 end
 
 get '/:filename/edit' do
-  file_path = root + '/data/' + params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
   @filename = params[:filename]
   @content = File.read(file_path)
@@ -57,7 +66,7 @@ get '/:filename/edit' do
 end
 
 post '/:filename' do
-  file_path = root + '/data/' + params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
   File.write(file_path, params[:content])
   session[:message] = "#{params[:filename]} has been updated."
