@@ -5,5 +5,9 @@ body {
 
 .message {
   padding: 10px;
-  background: #FFFF99;
+  background: #ffff99;
+}
+
+form.inline {
+  display: inline;
 }

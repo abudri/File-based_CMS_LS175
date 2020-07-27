@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 require 'sinatra'
 require 'sinatra/reloader'
 require 'tilt/erubis'
-require "redcarpet" # Assignment: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
-
+require 'redcarpet' # Assignment: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
 
 configure do
   enable :sessions # tells sinatra to activate it's session support
@@ -14,10 +15,10 @@ end
 # end
 
 def data_path
-  if ENV["RACK_ENV"] == "test"  # Assignment: https://launchschool.com/lessons/ac566aae/assignments/a23f0109
-    File.expand_path("../test/data", __FILE__)
+  if ENV['RACK_ENV'] == 'test' # Assignment: https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+    File.expand_path('test/data', __dir__)
   else
-    File.expand_path("../data", __FILE__)
+    File.expand_path('data', __dir__)
   end
 end
 
@@ -25,24 +26,24 @@ root = File.expand_path(__dir__)
 
 # rendering markdown into HTML using the redcarpet gem
 def render_markdown(text)
-  markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)  # from Assignment for rendering markdown files as HTML: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
+  markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML) # from Assignment for rendering markdown files as HTML: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
   markdown.render(text)
 end
 
 def load_file_content(path)
   content = File.read(path)
   case File.extname(path)
-  when ".txt"
-    headers["Content-Type"] = "text/plain"
+  when '.txt'
+    headers['Content-Type'] = 'text/plain'
     content
-  when ".md"
+  when '.md'
     erb render_markdown(content) # `erb` added here: https://launchschool.com/lessons/ac566aae/assignments/84acfc0c
   end
 end
 
 # view an index or listing of the files in the CMS
 get '/' do
-  pattern = File.join(data_path, "*") # assignment https://launchschool.com/lessons/ac566aae/assignments/a23f0109
+  pattern = File.join(data_path, '*') # assignment https://launchschool.com/lessons/ac566aae/assignments/a23f0109
   @files = Dir.glob(pattern).map { |path| File.basename(path) }
   erb :index
 end
@@ -55,17 +56,17 @@ end
 # creating a new file by saving/posting it's name. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
 post '/create' do
   filename = params[:filename].to_s # entered by user in url params
-  if filename.size == 0 
-    session[:message] = "A name is required."
+  if filename.empty?
+    session[:message] = 'A name is required.'
     status 422
     erb :new
   else
     file_path = File.join(data_path, filename)
 
-    File.write(file_path, "")
+    File.write(file_path, '')
     session[:message] = "#{params[:filename]} has been created."
 
-    redirect "/"
+    redirect '/'
   end
 end
 
@@ -75,9 +76,8 @@ post '/:filename' do
 
   File.write(file_path, params[:content])
   session[:message] = "#{params[:filename]} has been updated."
-  redirect "/"
+  redirect '/'
 end
-
 
 # view a file
 get '/:filename' do
@@ -99,4 +99,14 @@ get '/:filename/edit' do
   @content = File.read(file_path)
 
   erb :edit
+end
+
+# delete a file
+post '/:filename/delete' do
+  file_path = File.join(data_path, params[:filename])
+
+  File.delete(file_path)
+
+  session[:message] = "#{params[:filename]} has been deleted"
+  redirect '/'
 end
