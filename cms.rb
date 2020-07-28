@@ -10,9 +10,16 @@ configure do
   set :sessions_secret, 'super secret' # setting the session secret, to the string 'secret'
 end
 
-# configure do
-#   set :erb, escape_html: true # Lesson 6, Sanitizing HTML: https://launchschool.com/lessons/31df6daa/assignments/d98e4174
-# end
+def user_signed_in?
+  session.key?(:username) # checking if user signed in, only accepts "admin" as of this point: https://launchschool.com/lessons/ac566aae/assignments/cf4382fe
+end
+
+def require_signed_in_user
+  unless user_signed_in?
+    session[:message] = 'You must be signed in to do that.'
+    redirect '/'
+  end
+end
 
 def data_path
   if ENV['RACK_ENV'] == 'test' # Assignment: https://launchschool.com/lessons/ac566aae/assignments/a23f0109
@@ -50,11 +57,15 @@ end
 
 # get view template form for creating a new file, we only enter the new file name here and taken back to the home index view. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
 get '/new' do
+  require_signed_in_user
+
   erb :new
 end
 
 # creating a new file by saving/posting it's name. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
 post '/create' do
+  require_signed_in_user
+
   filename = params[:filename].to_s # entered by user in url params
   if filename.empty?
     session[:message] = 'A name is required.'
@@ -72,6 +83,7 @@ end
 
 # update/save edits to an existing file from the edit file form view template. Note this has to be above the `get '/:filename' do` in order to not trigger error for non-existent file at this point
 post '/:filename' do
+  require_signed_in_user
   file_path = File.join(data_path, params[:filename])
 
   File.write(file_path, params[:content])
@@ -93,6 +105,8 @@ end
 
 # get the view template for editing an existing file
 get '/:filename/edit' do
+  require_signed_in_user
+
   file_path = File.join(data_path, params[:filename])
 
   @filename = params[:filename]
@@ -103,6 +117,8 @@ end
 
 # delete a file
 post '/:filename/delete' do
+  require_signed_in_user
+
   file_path = File.join(data_path, params[:filename])
 
   File.delete(file_path)
