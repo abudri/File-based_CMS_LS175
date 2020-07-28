@@ -4,10 +4,20 @@ require 'sinatra'
 require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'redcarpet' # Assignment: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
+require 'yaml'
 
 configure do
   enable :sessions # tells sinatra to activate it's session support
   set :sessions_secret, 'super secret' # setting the session secret, to the string 'secret'
+end
+
+def load_user_credentials
+  credentials_path = if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/users.yml", __FILE__) # users credentials file for testing purposes
+  else
+    File.expand_path("../users.yml", __FILE__)  # use user crentials file, https://launchschool.com/lessons/ac566aae/assignments/c745b2fd
+  end
+  YAML.load_file(credentials_path)
 end
 
 def user_signed_in?
@@ -134,8 +144,11 @@ end
 
 # passing in signin credentials, accepted or rejected
 post '/users/signin' do
-  if params[:username] == 'admin' && params[:password] == 'secret'
-    session[:username] = params[:username]
+  credentials = load_user_credentials  # loads user data from users.yml file
+  username = params[:username]
+  
+  if credentials.key?(username) && credentials[username] == params[:password]
+    session[:username] = username
     session[:message] = 'Welcome!'
     redirect '/'
   else
