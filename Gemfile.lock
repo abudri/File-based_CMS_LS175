@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     backports (3.18.1)
+    bcrypt (3.1.13)
     erubis (2.7.0)
     minitest (5.14.1)
     multi_json (1.15.0)
@@ -28,15 +29,13 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  bcrypt
   erubis
   minitest
   rack-test
   redcarpet
   sinatra (~> 1.4.7)
   sinatra-contrib
-
-RUBY VERSION
-   ruby 2.6.3p62
 
 BUNDLED WITH
    2.1.4

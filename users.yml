@@ -1,4 +1,4 @@
 # users.yml
 ---
-developer: letmein
-admin: secret
+developer: "$2a$12$gr8dOE4DE0/kLqPBrywBL.fJwO7/AFCzN2nz3qoKAkQ/1bKpVNnXW"
+admin: "$2a$12$t/IpoS56pREYuZrGD6IK7eqFkgQHayrK2Z58v7xgG2YY7ai9sTDlS"

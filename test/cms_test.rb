@@ -180,7 +180,6 @@ end
   end
 
   def test_signin
-    
     post '/users/signin', username: 'admin', password: 'secret'
     assert_equal 302, last_response.status
     assert_equal 'Welcome!', session[:message]

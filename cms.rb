@@ -5,6 +5,7 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'redcarpet' # Assignment: https://launchschool.com/lessons/ac566aae/assignments/98d2fce2
 require 'yaml'
+require 'bcrypt' # hashing passwords: https://launchschool.com/lessons/ac566aae/assignments/537af113
 
 configure do
   enable :sessions # tells sinatra to activate it's session support
@@ -12,12 +13,23 @@ configure do
 end
 
 def load_user_credentials
-  credentials_path = if ENV["RACK_ENV"] == "test"
-    File.expand_path("../test/users.yml", __FILE__) # users credentials file for testing purposes
-  else
-    File.expand_path("../users.yml", __FILE__)  # use user crentials file, https://launchschool.com/lessons/ac566aae/assignments/c745b2fd
+  credentials_path = if ENV['RACK_ENV'] == 'test'
+                       File.expand_path('test/users.yml', __dir__) # users credentials file for testing purposes
+                     else
+                       File.expand_path('users.yml', __dir__) # use user crentials file, https://launchschool.com/lessons/ac566aae/assignments/c745b2fd
   end
   YAML.load_file(credentials_path)
+end
+
+def valid_credentials?(username, password)
+  credentials = load_user_credentials # hashing passwords for security: https://launchschool.com/lessons/ac566aae/assignments/537af113
+
+  if credentials.key?(username)
+    bcrypt_password = BCrypt::Password.new(credentials[username])
+    bcrypt_password == password
+  else
+    false
+  end
 end
 
 def user_signed_in?
@@ -144,10 +156,9 @@ end
 
 # passing in signin credentials, accepted or rejected
 post '/users/signin' do
-  credentials = load_user_credentials  # loads user data from users.yml file
   username = params[:username]
-  
-  if credentials.key?(username) && credentials[username] == params[:password]
+
+  if valid_credentials?(username, params[:password]) # refactored to use bcrypt: https://launchschool.com/lessons/ac566aae/assignments/537af113
     session[:username] = username
     session[:message] = 'Welcome!'
     redirect '/'

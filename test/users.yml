@@ -1,3 +1,3 @@
 # test/users.yml
 ---
-admin: secret
+admin: "$2a$12$t/IpoS56pREYuZrGD6IK7eqFkgQHayrK2Z58v7xgG2YY7ai9sTDlS"
